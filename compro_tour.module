@@ -1,0 +1,119 @@
+<?php
+/**
+ * @file
+ * Code for the Compro Tour feature.
+ */
+
+include_once 'compro_tour.features.inc';
+
+/**
+ * Returns all tour entities.
+ */
+function compro_tour_get_tours() {
+  $tours = NULL;
+
+  // Search for any available tours
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'tour')
+    ->entityCondition('bundle', 'tour');
+
+  $result = $query->execute();
+
+  if (isset($result['tour'])) {
+    $tours = entity_load('tour', array_keys($result['tour']));
+  }
+
+  return $tours;
+}
+
+/**
+ * Returns a machine name.
+ */
+function compro_tour_machine_name($string) {
+  $string = strtolower($string);
+  return preg_replace('@[^a-z0-9_]+@', '_', $string);
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function compro_tour_block_info() {
+  $tours = compro_tour_get_tours();
+
+  if ($tours) {
+    // Create blocks from tours.
+    foreach ($tours as $tour) {
+      $blocks['compro_tour' . $tour->id] = array(
+        'info' => $tour->title,
+      );
+    }
+
+    return $blocks;
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function compro_tour_block_view($delta = '') {
+  $block = array();
+
+  // Grab all tours.
+  $tours = compro_tour_get_tours();
+
+  foreach ($tours as $tour) {
+    if ('compro_tour' . $tour->id == $delta) {
+      $block['content'] = compro_tour_block_content($tour);
+    }
+  }
+
+  return $block;
+}
+
+/**
+ * Tour block content.
+ */
+function compro_tour_block_content($tour) {
+  drupal_add_css(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch.min.css');
+  drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch.min.js');
+  drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/compro_tour.js');
+
+  // Load steps.
+  foreach ($tour->field_tour_steps['und'] as $step_id) {
+    $step_ids[$step_id['target_id']] = $step_id['target_id'];
+  }
+
+  $step_entities = entity_load('tour', $step_ids);
+
+  // Structure steps a bit better to allow for less JS code.
+  foreach ($step_entities as $step) {
+    $steps[] = array(
+      'title' => $step->title,
+      'content' => $step->field_step_body['und'][0]['safe_value'],
+      'target' => $step->field_step_css_selector['und'][0]['safe_value'],
+      'placement' => $step->field_step_placement['und'][0]['value'],
+    );
+  }
+
+  // Send step data to front end to build tour.
+  $settings = array(
+    'steps' => $steps,
+    'tour' => compro_tour_machine_name($tour->title),
+    'link' => isset($tour->field_tour_link['und'][0]['safe_value']) ? TRUE : FALSE,
+  );
+
+  drupal_add_js(array('compro_tour' => $settings), array('type' => 'setting'));
+
+  // Output a link if one was requested.
+  if (isset($tour->field_tour_link['und'][0]['safe_value'])) {
+    $output = array(
+      '#markup' => l($tour->field_tour_link['und'][0]['safe_value'], 'javascript:', array(
+        'external' => TRUE,
+        'attributes' => array('onclick' => 'startTour()'),
+      )),
+    );
+
+    return $output;
+  }
+}
