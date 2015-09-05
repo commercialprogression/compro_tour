@@ -75,8 +75,8 @@ function compro_tour_block_view($delta = '') {
  * Tour block content.
  */
 function compro_tour_block_content($tour) {
-  drupal_add_css(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch.min.css');
-  drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch.min.js');
+  drupal_add_css(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch/css/hopscotch.min.css');
+  drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch/js/hopscotch.min.js');
   drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/compro_tour.js');
 
   // Load steps.

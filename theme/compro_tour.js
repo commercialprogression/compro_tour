@@ -22,8 +22,6 @@
         });
       }
 
-      console.log(link);
-
       // Rev it up!
       if (link == false) {
         hopscotch.startTour(Drupal.settings.tour);
