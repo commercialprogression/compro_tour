@@ -26,7 +26,7 @@ function compro_tour_validate($form, &$form_state) {
   if ($page != $normal_path) {
     drupal_set_message(t('The tour system stores system paths only, but will use the URL alias for display. %link_path has been stored as %normal_path', array(
       '%link_path' => $page,
-      '%normal_path' => $normal_path
+      '%normal_path' => $normal_path,
     )));
     $form_state['values']['field_tour_page'][LANGUAGE_NONE][0]['value'] = $normal_path;
   }

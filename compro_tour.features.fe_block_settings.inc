@@ -29,7 +29,7 @@ function compro_tour_default_fe_block_settings() {
         'weight' => 0,
       ),
       'compro_adminimal' => array(
-        'region' => 'content_top',
+        'region' => 'content',
         'status' => 1,
         'theme' => 'compro_adminimal',
         'weight' => -43,
@@ -42,7 +42,7 @@ function compro_tour_default_fe_block_settings() {
       ),
     ),
     'title' => '',
-    'visibility' => 0,
+    'visibility' => 1,
   );
 
   $export['compro_tour-compro_tour'] = array(
