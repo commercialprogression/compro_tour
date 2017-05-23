@@ -7,12 +7,50 @@
 include_once 'compro_tour.features.inc';
 
 /**
+ * Implements hook_form_alter().
+ */
+function compro_tour_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'eck__entity__form_edit_tour_tour' || $form_id == 'eck__entity__form_add_tour_tour') {
+    $form['#validate'][] = 'compro_tour_validate';
+  }
+}
+
+/**
+ * Implements hook_validate().
+ *
+ * I copied most of this from menu_edit_item_validate() in menu.admin.inc.
+ */
+function compro_tour_validate($form, &$form_state) {
+  $page = $form_state['values']['field_tour_page'][LANGUAGE_NONE][0]['value'];
+  $normal_path = drupal_get_normal_path($page);
+  if ($page != $normal_path) {
+    drupal_set_message(t('The tour system stores system paths only, but will use the URL alias for display. %link_path has been stored as %normal_path', array(
+      '%link_path' => $page,
+      '%normal_path' => $normal_path,
+    )));
+    $form_state['values']['field_tour_page'][LANGUAGE_NONE][0]['value'] = $normal_path;
+  }
+  if (!url_is_external($page)) {
+    $parsed_link = parse_url($page);
+    if (isset($parsed_link['path']) && $page != $parsed_link['path']) {
+      $form_state['values']['field_tour_page'][LANGUAGE_NONE][0]['value'] = $parsed_link['path'];
+    }
+  }
+  if (url_is_external($page)) {
+    form_set_error('field_tour_page', t("The path '@link_path' must be an internal link.", array('@link_path' => $page)));
+  }
+  if (!trim($page) || !drupal_valid_path($page, TRUE)) {
+    form_set_error('field_tour_page', t("The path '@link_path' is either invalid or you do not have access to it.", array('@link_path' => $page)));
+  }
+}
+
+/**
  * Returns all tour entities.
  */
 function compro_tour_get_tours() {
-  $tours = NULL;
+  $tours = array();
 
-  // Search for any available tours
+  // Search for any available tours.
   $query = new EntityFieldQuery();
 
   $query->entityCondition('entity_type', 'tour')
@@ -39,18 +77,19 @@ function compro_tour_machine_name($string) {
  * Implements hook_block_info().
  */
 function compro_tour_block_info() {
-  $tours = compro_tour_get_tours();
+  $blocks = array();
 
-  if ($tours) {
-    // Create blocks from tours.
-    foreach ($tours as $tour) {
-      $blocks['compro_tour' . $tour->id] = array(
-        'info' => $tour->title,
-      );
-    }
+  // Create blocks from tours.
+  $blocks['compro_tour'] = array(
+    'info' => t('Compro Tours'),
+  );
 
-    return $blocks;
-  }
+  // The add tour block on the admin page.
+  $blocks['add_tour'] = array(
+    'info' => t('Add Tours'),
+  );
+
+  return $blocks;
 }
 
 /**
@@ -59,13 +98,14 @@ function compro_tour_block_info() {
 function compro_tour_block_view($delta = '') {
   $block = array();
 
-  // Grab all tours.
-  $tours = compro_tour_get_tours();
+  if ($delta == 'compro_tour') {
+    $block['content'] = compro_tour_block_content();
+  }
 
-  foreach ($tours as $tour) {
-    if ('compro_tour' . $tour->id == $delta) {
-      $block['content'] = compro_tour_block_content($tour);
-    }
+  // The add tour block on the admin page.
+  if ($delta == 'add_tour') {
+    $block['subject'] = '';
+    $block['content'] = compro_tour_add_tours_content();
   }
 
   return $block;
@@ -74,46 +114,87 @@ function compro_tour_block_view($delta = '') {
 /**
  * Tour block content.
  */
-function compro_tour_block_content($tour) {
+function compro_tour_block_content() {
+  $tours = compro_tour_get_tours();
+  $output = array();
   drupal_add_css(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch/css/hopscotch.min.css');
   drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/hopscotch/js/hopscotch.min.js');
   drupal_add_js(drupal_get_path('module', 'compro_tour') . '/theme/compro_tour.js');
 
-  // Load steps.
-  foreach ($tour->field_tour_steps['und'] as $step_id) {
-    $step_ids[$step_id['target_id']] = $step_id['target_id'];
-  }
+  foreach ($tours as $tour) {
+    // Only render the tours for the correct page.
+    if ($_GET['q'] != $tour->field_tour_page[LANGUAGE_NONE][0]['value']) {
+      continue;
+    }
 
-  $step_entities = entity_load('tour', $step_ids);
+    $step_ids = array();
+    $steps = array();
 
-  // Structure steps a bit better to allow for less JS code.
-  foreach ($step_entities as $step) {
-    $steps[] = array(
-      'title' => $step->title,
-      'content' => $step->field_step_body['und'][0]['safe_value'],
-      'target' => $step->field_step_css_selector['und'][0]['safe_value'],
-      'placement' => $step->field_step_placement['und'][0]['value'],
-    );
-  }
+    // Load steps.
+    foreach ($tour->field_tour_steps[LANGUAGE_NONE] as $step_id) {
+      $step_ids[$step_id['target_id']] = $step_id['target_id'];
+    }
 
-  // Send step data to front end to build tour.
-  $settings = array(
-    'steps' => $steps,
-    'tour' => compro_tour_machine_name($tour->title),
-    'link' => isset($tour->field_tour_link['und'][0]['safe_value']) ? TRUE : FALSE,
-  );
+    $step_entities = entity_load('tour', $step_ids);
 
-  drupal_add_js(array('compro_tour' => $settings), array('type' => 'setting'));
+    // Structure steps a bit better to allow for less JS code.
+    foreach ($step_entities as $step) {
+      $steps[] = array(
+        'title' => $step->title,
+        'content' => $step->field_step_body[LANGUAGE_NONE][0]['safe_value'],
+        'target' => $step->field_step_css_selector[LANGUAGE_NONE][0]['safe_value'],
+        'placement' => $step->field_step_placement[LANGUAGE_NONE][0]['value'],
+      );
+    }
 
-  // Output a link if one was requested.
-  if (isset($tour->field_tour_link['und'][0]['safe_value'])) {
-    $output = array(
-      '#markup' => l($tour->field_tour_link['und'][0]['safe_value'], 'javascript:', array(
-        'external' => TRUE,
-        'attributes' => array('onclick' => 'startTour()'),
-      )),
+    // Send step data to front end to build tour.
+    $settings = array(
+      'steps' => $steps,
+      'tour' => compro_tour_machine_name($tour->title),
+      'link' => isset($tour->field_tour_link[LANGUAGE_NONE][0]['safe_value']) ? TRUE : FALSE,
     );
 
-    return $output;
+    drupal_add_js(array('compro_tour' => $settings), array('type' => 'setting'));
+
+    // Output a link if one was requested.
+    if (isset($tour->field_tour_link[LANGUAGE_NONE][0]['safe_value'])) {
+      $output = array(
+        '#markup' => l($tour->field_tour_link[LANGUAGE_NONE][0]['safe_value'], 'javascript:', array(
+          'external' => TRUE,
+          'attributes' => array('onclick' => 'startTour()'),
+        )),
+      );
+    }
   }
+  return $output;
+}
+
+/**
+ * Add tour block content.
+ */
+function compro_tour_add_tours_content() {
+  $render = array();
+
+  $component = entity_get_info('tour');
+
+  // Build out an array of components to add.
+  if ($component['bundles']) {
+    foreach ($component['bundles'] as $key => $bundle) {
+      if ($bundle['label'] == 'Tour') {
+        $render[$key] = array(
+          '#attached' => array(
+            'css' => array(drupal_get_path('module', 'compro_tour') . '/theme/css/compro_tour.css'),
+          ),
+          '#markup' => l(t('Add New !label', array('!label' => $bundle['label'])), $bundle['crud']['add']['path'], array(
+            'query' => array('destination' => 'admin/content/tours'),
+            'attributes' => array(
+              'class' => array('button'),
+            ),
+          )),
+        );
+      }
+    }
+  }
+
+  return $render;
 }

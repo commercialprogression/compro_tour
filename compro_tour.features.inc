@@ -5,6 +5,13 @@
  */
 
 /**
+ * Implements hook_views_api().
+ */
+function compro_tour_views_api($module = NULL, $api = NULL) {
+  return array("api" => "3.0");
+}
+
+/**
  * Implements hook_eck_bundle_info().
  */
 function compro_tour_eck_bundle_info() {
@@ -14,12 +21,14 @@ function compro_tour_eck_bundle_info() {
       'entity_type' => 'tour',
       'name' => 'step',
       'label' => 'Step',
+      'config' => array(),
     ),
     'tour_tour' => array(
       'machine_name' => 'tour_tour',
       'entity_type' => 'tour',
       'name' => 'tour',
       'label' => 'Tour',
+      'config' => array(),
     ),
   );
   return $items;
