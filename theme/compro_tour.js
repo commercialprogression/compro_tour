@@ -30,7 +30,6 @@
 
         // Set cookie so takeover doesn't takeover no more.
         $.cookie('takeover', true, {
-          path: '/',
           expires: 60
         });
       }
