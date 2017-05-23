@@ -10,7 +10,7 @@
 function compro_tour_field_default_field_bases() {
   $field_bases = array();
 
-  // Exported field_base: 'field_step_body'
+  // Exported field_base: 'field_step_body'.
   $field_bases['field_step_body'] = array(
     'active' => 1,
     'cardinality' => 1,
@@ -31,7 +31,7 @@ function compro_tour_field_default_field_bases() {
     'type' => 'text_long',
   );
 
-  // Exported field_base: 'field_step_css_selector'
+  // Exported field_base: 'field_step_css_selector'.
   $field_bases['field_step_css_selector'] = array(
     'active' => 1,
     'cardinality' => 1,
@@ -53,7 +53,7 @@ function compro_tour_field_default_field_bases() {
     'type' => 'text',
   );
 
-  // Exported field_base: 'field_step_placement'
+  // Exported field_base: 'field_step_placement'.
   $field_bases['field_step_placement'] = array(
     'active' => 1,
     'cardinality' => 1,
@@ -81,7 +81,7 @@ function compro_tour_field_default_field_bases() {
     'type' => 'list_text',
   );
 
-  // Exported field_base: 'field_tour_link'
+  // Exported field_base: 'field_tour_link'.
   $field_bases['field_tour_link'] = array(
     'active' => 1,
     'cardinality' => 1,
@@ -103,7 +103,29 @@ function compro_tour_field_default_field_bases() {
     'type' => 'text',
   );
 
-  // Exported field_base: 'field_tour_steps'
+  // Exported field_base: 'field_tour_page'.
+  $field_bases['field_tour_page'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_tour_page',
+    'indexes' => array(
+      'format' => array(
+        0 => 'format',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'text',
+    'settings' => array(
+      'max_length' => 255,
+      'profile2_private' => FALSE,
+    ),
+    'translatable' => 0,
+    'type' => 'text',
+  );
+
+  // Exported field_base: 'field_tour_steps'.
   $field_bases['field_tour_steps'] = array(
     'active' => 1,
     'cardinality' => -1,

@@ -5,6 +5,8 @@
       var steps = Drupal.settings.compro_tour.steps;
       var title = Drupal.settings.compro_tour.tour;
       var link = Drupal.settings.compro_tour.link;
+      // Check for takeover cookie.
+      var takeover_cookie = $.cookie('takeover');
 
       // Create empty tour.
       Drupal.settings.tour = {
@@ -23,8 +25,14 @@
       }
 
       // Rev it up!
-      if (link == false) {
+      if (link == false && takeover_cookie == null) {
         hopscotch.startTour(Drupal.settings.tour);
+
+        // Set cookie so takeover doesn't takeover no more.
+        $.cookie('takeover', true, {
+          path: '/',
+          expires: 60
+        });
       }
     }
   };
